@@ -5,138 +5,127 @@ namespace TurnBasedBattleSystem;
 
 public static class BattleManager
 {
-    public static List<IUnit> PlayerTeam { get; private set; } = new();
-    public static List<IUnit> AITeam { get; private set; } = new();
-    public static BattleAI EnemyAI = new TestAI();
-    public static bool BattleInProgress = false;
-    public static List<BattleAction> CurrentEnemyActions = new();
+	public static event OnDeathListener? OnDeath;
 
-    public delegate void OnTurnStartListener(StartTurnEvent data);
+	public delegate void OnDeathListener(DeathEvent data);
 
-    public static event OnTurnStartListener OnTurnStart = null!;
+	public static event OnGainStatusListener? OnGainStatus;
 
-    public delegate void OnHitListener(HitEvent data);
+	public delegate void OnGainStatusListener(GainStatusEvent data);
 
-    public static event OnHitListener OnHit = null!;
+	public static event OnHitListener? OnHit;
 
-    public delegate void OnDeathListener(DeathEvent data);
+	public delegate void OnHitListener(HitEvent data);
 
-    public static event OnDeathListener OnDeath = null!;
+	public static event OnTurnEndListener? OnTurnEnd;
 
-    public delegate void OnGainStatusListener(GainStatusEvent data);
+	public delegate void OnTurnEndListener(EndTurnEvent data);
 
-    public static event OnGainStatusListener OnGainStatus = null!;
+	public static event OnTurnStartListener? OnTurnStart;
 
-    public delegate void OnTurnEndListener(EndTurnEvent data);
+	public delegate void OnTurnStartListener(StartTurnEvent data);
 
-    public static event OnTurnEndListener OnTurnEnd = null!;
+	public static readonly List<IBattleAction> CurrentEnemyActions = [];
+	public static bool BattleInProgress;
+	public static IBattleAI EnemyAi = new TestAI();
+	public static List<IUnit> PlayerTeam { get; private set; } = [];
+	public static List<IUnit> AiTeam { get; private set; } = [];
 
-    public static void StartBattle(List<IUnit> playerUnits, List<IUnit> enemyUnits)
-    {
-        BattleInProgress = true;
-        PlayerTeam = playerUnits;
-        AITeam = enemyUnits;
+	public static void StartBattle(List<IUnit> playerUnits, List<IUnit> enemyUnits)
+	{
+		BattleInProgress = true;
+		PlayerTeam = playerUnits;
+		AiTeam = enemyUnits;
 
-        OnTurnStart?.Invoke(new StartTurnEvent());
+		OnTurnStart?.Invoke(new StartTurnEvent());
 
-        foreach (IUnit enemy in AITeam)
-        {
-            CurrentEnemyActions.Add(EnemyAI.DoAction(enemy));
-        }
-    }
+		foreach (var enemy in AiTeam)
+			CurrentEnemyActions.Add(EnemyAi.DoAction(enemy));
+	}
 
-    public static void Cleanup()
-    {
-        BattleInProgress = false;
-        OnTurnStart = null!;
-        OnTurnEnd = null!;
-        OnHit = null!;
-        OnDeath = null!;
-    }
+	public static void Cleanup()
+	{
+		BattleInProgress = false;
+		OnTurnStart = null!;
+		OnTurnEnd = null!;
+		OnHit = null!;
+		OnDeath = null!;
+	}
 
-    /*
-     * Start Battle
-     * Queue Enemy Actions
-     * Init battle/turn specific
-     * loop:wait for player input
-     * resolve player input
-     * resolve turn end
-     * resolve turn begin
-     * queue enemy actions
-     * jmp loop
-     *
-     * Event registry
-     */
+	/*
+	 * Start Battle
+	 * Queue Enemy Actions
+	 * Init battle/turn specific
+	 * loop:wait for player input
+	 * resolve player input
+	 * resolve turn end
+	 * resolve turn begin
+	 * queue enemy actions
+	 * jmp loop
+	 *
+	 * Event registry
+	 */
 
-    public static void HandlePlayerInput(List<BattleAction> actions)
-    {
-        if (!BattleInProgress) throw new Exception();
-        List<BattleAction> combinedActions = CurrentEnemyActions.Concat(actions).ToList();
-        //TODO: tiebreaking for priority
-        combinedActions.Sort(ActionSort);
+	public static void HandlePlayerInput(List<IBattleAction> actions)
+	{
+		if (!BattleInProgress)
+			throw new Exception();
 
-        foreach (BattleAction action in combinedActions)
-        {
-            Resolve(action);
-        }
+		var combinedActions = CurrentEnemyActions.Concat(actions).ToList();
 
-        OnTurnEnd?.Invoke(new EndTurnEvent());
-        CurrentEnemyActions.Clear();
-        OnTurnStart?.Invoke(new StartTurnEvent());
-        foreach (IUnit enemy in AITeam)
-        {
-            CurrentEnemyActions.Add(EnemyAI.DoAction(enemy));
-        }
-    }
+		//TODO: tiebreaking for priority
+		combinedActions.Sort(ActionSort);
 
-    private static int ActionSort(BattleAction a, BattleAction b)
-    {
-        return a.Priority - b.Priority;
-    }
+		foreach (var action in combinedActions)
+			Resolve(action);
 
-    static void Resolve(BattleAction action)
-    {
-        if (action is AttackAction atk)
-        {
-            Resolve(atk.Attacker, atk.Target, atk.Attack);
-        }
-    }
+		OnTurnEnd?.Invoke(new EndTurnEvent());
+		CurrentEnemyActions.Clear();
+		OnTurnStart?.Invoke(new StartTurnEvent());
+		foreach (var enemy in AiTeam)
+			CurrentEnemyActions.Add(EnemyAi.DoAction(enemy));
+	}
 
-    static void Resolve(IUnit attacker, IUnit target, IAttack attack)
-    {
-        /*
-         *
-         * So long story short
-         *
-         * each attack has a function resolve that returns an Enumerator<BattleEvent>
-         *
-         * loop through that, emit each event created.
-         */
+	private static int ActionSort(IBattleAction a, IBattleAction b) => a.Priority - b.Priority;
 
-        foreach (BattleEvent e in attack.Resolve(attacker, target))
-        {
-            // Err: Need defined order of operations for certain handlers.
-            // do we tho?    
-            if (e is HitEvent h)
-            {
-                OnHit?.Invoke(h);
-            }
-            else if (e is DeathEvent d)
-            {
-                OnDeath?.Invoke(d);
-            }
-            else if (e is GainStatusEvent s)
-            {
-                OnGainStatus?.Invoke(s);
-            }
-        }
+	private static void Resolve(IBattleAction action)
+	{
+		if (action is AttackAction atk)
+			Resolve(atk.Attacker, atk.Target, atk.Attack);
+	}
 
-        //death check
-        if (target.Health <= 0)
-        {
-            //push death event.
-            DeathEvent ded = new(target);
-            OnDeath?.Invoke(ded);
-        }
-    }
+	private static void Resolve(IUnit attacker, IUnit target, IAttack attack)
+	{
+		/*
+		 *
+		 * So long story short
+		 *
+		 * each attack has a function resolve that returns an Enumerator<BattleEvent>
+		 *
+		 * loop through that, emit each event created.
+		 */
+		foreach (var e in attack.Resolve(attacker, target))
+			switch (e)
+			{
+				// Err: Need defined order of operations for certain handlers.
+				// do we tho?    
+				case HitEvent h:
+					OnHit?.Invoke(h);
+					break;
+				case DeathEvent d:
+					OnDeath?.Invoke(d);
+					break;
+				case GainStatusEvent s:
+					OnGainStatus?.Invoke(s);
+					break;
+			}
+
+		//death check
+		if (target.Health <= 0)
+		{
+			//push death event.
+			DeathEvent ded = new(target);
+			OnDeath?.Invoke(ded);
+		}
+	}
 }

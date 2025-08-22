@@ -2,10 +2,7 @@ using TurnBasedBattleSystem.Actions;
 
 namespace TurnBasedBattleSystem;
 
-public class TestAI : BattleAI
+public class TestAI : IBattleAI
 {
-    public BattleAction DoAction(IUnit actor)
-    {
-        throw new NotImplementedException();
-    }
+	public IBattleAction DoAction(IUnit actor) => throw new NotImplementedException();
 }

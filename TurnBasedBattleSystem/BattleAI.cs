@@ -2,7 +2,7 @@ using TurnBasedBattleSystem.Actions;
 
 namespace TurnBasedBattleSystem;
 
-public interface BattleAI
+public interface IBattleAI
 {
-    public BattleAction DoAction(IUnit actor);
+	public IBattleAction DoAction(IUnit actor);
 }

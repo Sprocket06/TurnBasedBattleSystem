@@ -1,10 +1,6 @@
 namespace TurnBasedBattleSystem.Events;
 
-public class DeathEvent : BattleEvent
+public class DeathEvent(IUnit deadUnit) : BattleEvent
 {
-    public DeathEvent(IUnit deadUnit)
-    {
-        Unit = deadUnit;
-    }
-    public IUnit Unit { get; set; }
+	public IUnit Unit { get; set; } = deadUnit;
 }

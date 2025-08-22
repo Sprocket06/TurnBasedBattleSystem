@@ -1,6 +1,6 @@
 namespace TurnBasedBattleSystem.Actions;
 
-public interface BattleAction
+public interface IBattleAction
 {
-    public int Priority { get; }
+	public int Priority { get; }
 }

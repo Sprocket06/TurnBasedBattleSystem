@@ -2,5 +2,5 @@ namespace TurnBasedBattleSystem;
 
 public interface IStatus
 {
-    public void Remove(int stacks);
+	public void Remove(int stacks);
 }

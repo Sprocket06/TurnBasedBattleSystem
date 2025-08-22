@@ -1,15 +1,8 @@
 namespace TurnBasedBattleSystem.Events;
 
-public class GainStatusEvent : BattleEvent
+public class GainStatusEvent(IUnit unit, IStatus status, int stacks) : BattleEvent
 {
-    public IUnit Unit { get; set; }
-    public IStatus Status { get; set; }
-    public int Stacks { get; set; }
-
-    public GainStatusEvent(IUnit u, IStatus s, int n)
-    {
-        Unit = u;
-        Status = s;
-        Stacks = n;
-    }
+	public IUnit Unit { get; set; } = unit;
+	public IStatus Status { get; set; } = status;
+	public int Stacks { get; set; } = stacks;
 }
