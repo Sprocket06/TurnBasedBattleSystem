@@ -86,7 +86,7 @@ public static class BattleManager
 			CurrentEnemyActions.Add(EnemyAi.DoAction(enemy));
 	}
 
-	private static int ActionSort(IBattleAction a, IBattleAction b) => a.Priority - b.Priority;
+	private static int ActionSort(IBattleAction a, IBattleAction b) => b.Priority - a.Priority;
 
 	private static void Resolve(IBattleAction action)
 	{
